@@ -32,7 +32,9 @@ android {
 }
 
 dependencies {
-
+    implementation ("org.littleshoot:littleproxy:1.1.0-beta2")
+    implementation ("org.bouncycastle:bcprov-jdk15on:1.70")
+    implementation ("org.bouncycastle:bcpkix-jdk15on:1.70")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
