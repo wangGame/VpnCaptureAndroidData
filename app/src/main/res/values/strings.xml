@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">VpnCaptureData</string>
+    <string name="main_vpn">开启vpn</string>
+</resources>
