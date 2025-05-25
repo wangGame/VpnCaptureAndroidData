@@ -54,6 +54,7 @@ public class VPNRunnable implements Runnable {
             boolean dataSent = true;
             boolean dataReceived;
             while (!Thread.interrupted()) {
+
                 if (dataSent)
                     bufferToNetwork = ByteBufferPool.acquire();
                 else
@@ -89,7 +90,10 @@ public class VPNRunnable implements Runnable {
 
                         byte[] data = new byte[bufferFromNetwork.remaining()];
                         bufferFromNetwork.get(data);
-                        Log.v("kw vpn tcp",new String(data));
+                        if (data.length>10) {
+                            Log.v("kw vpn tcp",new String(data));
+                        }
+
 
                     }
                     dataReceived = true;

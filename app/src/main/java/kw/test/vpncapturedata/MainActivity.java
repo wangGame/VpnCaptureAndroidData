@@ -15,17 +15,23 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import java.security.Security;
+
 import kw.test.vpncapturedata.base.BaseActivity;
+import kw.test.vpncapturedata.proxy.CertificateManager;
 import kw.test.vpncapturedata.serivice.LocalVPNService;
 
 public class MainActivity extends BaseActivity {
     private boolean waitingForVPNStart;
     private static final int VPN_REQUEST_CODE = 0x0F;
-
+    private CertificateManager certificateManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        Security.addProvider(new BouncyCastleProvider());
+        this.certificateManager = new CertificateManager(this);
     }
 
     @Override

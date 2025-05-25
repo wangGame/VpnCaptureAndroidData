@@ -42,7 +42,7 @@ public class TCPOutput implements Runnable {
         try {
             Thread currentThread = Thread.currentThread();
             while (true) {
-                Log.i(Constant.APPLOAGTAG,"UDP ===========>");
+
 
                 Packet currentPacket;
                 // TODO: Block when not connected
@@ -207,7 +207,7 @@ public class TCPOutput implements Runnable {
 
             byte[] data = new byte[responseBuffer.remaining()];
             responseBuffer.get(data);
-            Log.v("kw vpn tcp",new String(data));
+
 
 
         }

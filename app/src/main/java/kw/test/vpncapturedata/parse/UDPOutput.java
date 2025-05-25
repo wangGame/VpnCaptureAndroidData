@@ -64,7 +64,7 @@ public class UDPOutput implements Runnable {
         try {
             Thread currentThread = Thread.currentThread();
             while (true) {
-                Log.i(Constant.APPLOAGTAG,"UDP ===========>");
+
                 Packet currentPacket;
                 // TODO: Block when not connected
                 do {
@@ -111,7 +111,7 @@ public class UDPOutput implements Runnable {
 
                         byte[] data = new byte[payloadBuffer.remaining()];
                         payloadBuffer.get(data);
-                        Log.v("kw vpn udp OUT",new String(data));
+
 
 
                     }

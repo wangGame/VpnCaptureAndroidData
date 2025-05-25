@@ -3,9 +3,12 @@ package kw.test.vpncapturedata.data;
 import android.util.Log;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import kw.test.vpncapturedata.proxy.CertificateManager;
+import kw.test.vpncapturedata.proxy.MitmTlsServer;
 import kw.test.vpncapturedata.utils.BitUtils;
 
 public class Packet {
@@ -57,17 +60,46 @@ public class Packet {
             }
             if (data!=null){
                 //判断是不是http
-                if (isHttps(payload)) {
-                    Log.i("VPN", "http请求 数据\n：" + data);
+                if (isHttp(payload)) {
+//                    Log.i("VPN", "http请求 数据\n：" + data);
                 }else {
                     Log.i("VPN", "https请求 数据现不显示：");
+                    if (!isss) {
+                        isss = true;
+                        startMitmProxy();
+                    }else {
+                        try {
+                            ip4Header.destinationAddress = InetAddress.getByName("127.0.0.1");
+                        } catch (UnknownHostException e) {
+                            throw new RuntimeException(e);
+                        }
+                        tcpHeader.destinationPort = 8888;
+                    }
                 }
             }
             buffer.position(position);
         }
     }
 
-    private boolean isHttps(byte[] payload){
+    public static boolean isss = false;
+
+
+
+    private void startMitmProxy() {
+        new Thread(() -> {
+            try {
+                MitmTlsServer server = new MitmTlsServer(
+                        CertificateManager.getInstance().loadCACert(),
+                        CertificateManager.getInstance().loadCAPrivateKey()
+                );
+                server.start();
+            } catch (Exception e) {
+                Log.e("MITM", "启动失败", e);
+            }
+        }).start();
+    }
+
+    private boolean isHttp(byte[] payload){
         boolean isHttp = false;
         // 基于端口判断
         if (tcpHeader.destinationPort == 80 || tcpHeader.sourcePort == 80) {

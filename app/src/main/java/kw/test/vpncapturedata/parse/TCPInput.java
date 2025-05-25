@@ -36,7 +36,7 @@ public class TCPInput implements Runnable {
             Log.d(TAG, "Started");
             while (!Thread.interrupted()) {
                 int readyChannels = selector.select();
-                Log.i(Constant.APPLOAGTAG,"UDP ===========>");
+
 
                 if (readyChannels == 0) {
                     Thread.sleep(10);
@@ -78,7 +78,6 @@ public class TCPInput implements Runnable {
 
                 byte[] data = new byte[responseBuffer.remaining()];
                 responseBuffer.get(data);
-                Log.v("kw vpn tcp",new String(data));
 
                 outputQueue.offer(responseBuffer);
 

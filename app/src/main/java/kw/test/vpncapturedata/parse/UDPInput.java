@@ -48,7 +48,7 @@ public class UDPInput implements Runnable {
         try {
             Log.i(TAG, "Started");
             while (!Thread.interrupted()) {
-                Log.i(Constant.APPLOAGTAG,"UDP ===========>");
+
 
                 int readyChannels = selector.select();
                 if (readyChannels == 0) {
@@ -72,7 +72,7 @@ public class UDPInput implements Runnable {
                         referencePacket.updateUDPBuffer(receiveBuffer, readBytes);
                         byte[] data = new byte[receiveBuffer.remaining()];
                         receiveBuffer.get(data);
-                        Log.v("kw vpn Udp ",new String(data));
+
                         receiveBuffer.position(HEADER_SIZE + readBytes);
                         outputQueue.offer(receiveBuffer);
                     }
