@@ -1,28 +1,20 @@
 package kw.test.vpncapturedata.parse;
 
-import android.content.Intent;
-import android.net.VpnService;
-import android.os.Build;
-import android.os.ParcelFileDescriptor;
 import android.util.Log;
-
-import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.Selector;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import kw.test.vpncapturedata.constant.Constant;
 import kw.test.vpncapturedata.data.Packet;
-import kw.test.vpncapturedata.data.PacketTest;
 import kw.test.vpncapturedata.utils.ByteBufferPool;
+
+/**
+ * 处理 接收来的数据  将数据分为TCP 和 UDP
+ */
 public class VPNRunnable implements Runnable {
     private static final String TAG = VPNRunnable.class.getSimpleName();
 
@@ -54,14 +46,18 @@ public class VPNRunnable implements Runnable {
             boolean dataSent = true;
             boolean dataReceived;
             while (!Thread.interrupted()) {
-
-                if (dataSent)
+                if (dataSent) {
+                    //如果设置了参数，那么取出上一个buffer继续加入数据
                     bufferToNetwork = ByteBufferPool.acquire();
-                else
+                }else {
+                    //否则清除掉，重新写入
                     bufferToNetwork.clear();
+                }
+                //从vpn中读取数据
                 int readBytes = vpnInput.read(bufferToNetwork);
                 if (readBytes > 0) {
                     dataSent = true;
+                    //读模式
                     bufferToNetwork.flip();
                     Packet packet = null;
                     try {
@@ -69,13 +65,13 @@ public class VPNRunnable implements Runnable {
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
+                    //加入到tcp或者udp队列中
                     if (packet.isUDP()) {
                         deviceToNetworkUDPQueue.offer(packet);
                     } else if (packet.isTCP()) {
                         deviceToNetworkTCPQueue.offer(packet);
                     } else {
                         Log.w(TAG, "Unknown packet type");
-                        Log.w(TAG, packet.ip4Header.toString());
                         dataSent = false;
                     }
                 } else {
@@ -83,18 +79,15 @@ public class VPNRunnable implements Runnable {
                 }
                 ByteBuffer bufferFromNetwork = networkToDeviceQueue.poll();
                 if (bufferFromNetwork != null) {
+                    //读取
                     bufferFromNetwork.flip();
                     while (bufferFromNetwork.hasRemaining()) {
                         vpnOutput.write(bufferFromNetwork);
-
-
                         byte[] data = new byte[bufferFromNetwork.remaining()];
                         bufferFromNetwork.get(data);
                         if (data.length>10) {
                             Log.v("kw vpn tcp",new String(data));
                         }
-
-
                     }
                     dataReceived = true;
 

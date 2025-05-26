@@ -35,6 +35,9 @@ import kw.test.vpncapturedata.serivice.LocalVPNService;
 import kw.test.vpncapturedata.utils.ByteBufferPool;
 import kw.test.vpncapturedata.utils.LRUCache;
 
+/**
+ * 转发出去
+ */
 public class UDPOutput implements Runnable {
     private static final String TAG = UDPOutput.class.getSimpleName();
     private LocalVPNService vpnService;
@@ -64,7 +67,6 @@ public class UDPOutput implements Runnable {
         try {
             Thread currentThread = Thread.currentThread();
             while (true) {
-
                 Packet currentPacket;
                 // TODO: Block when not connected
                 do {
@@ -97,10 +99,8 @@ public class UDPOutput implements Runnable {
                     }
                     outputChannel.configureBlocking(false);
                     currentPacket.swapSourceAndDestination();
-
                     selector.wakeup();
                     outputChannel.register(selector, SelectionKey.OP_READ, currentPacket);
-
                     channelCache.put(ipAndPort, outputChannel);
                 }
 
@@ -108,12 +108,8 @@ public class UDPOutput implements Runnable {
                     ByteBuffer payloadBuffer = currentPacket.backingBuffer;
                     while (payloadBuffer.hasRemaining()) {
                         outputChannel.write(payloadBuffer);
-
                         byte[] data = new byte[payloadBuffer.remaining()];
                         payloadBuffer.get(data);
-
-
-
                     }
                 } catch (IOException e) {
                     Log.e(TAG, "Network write error: " + ipAndPort, e);

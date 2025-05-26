@@ -27,6 +27,7 @@ public class MainActivity extends BaseActivity {
     private boolean waitingForVPNStart;
     private static final int VPN_REQUEST_CODE = 0x0F;
     private CertificateManager certificateManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

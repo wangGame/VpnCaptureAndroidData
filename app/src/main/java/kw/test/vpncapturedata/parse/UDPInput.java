@@ -34,7 +34,6 @@ import kw.test.vpncapturedata.utils.ByteBufferPool;
 public class UDPInput implements Runnable {
     private static final String TAG = UDPInput.class.getSimpleName();
     private static final int HEADER_SIZE = Packet.IP4_HEADER_SIZE + Packet.UDP_HEADER_SIZE;
-
     private Selector selector;
     private ConcurrentLinkedQueue<ByteBuffer> outputQueue;
 
@@ -48,8 +47,6 @@ public class UDPInput implements Runnable {
         try {
             Log.i(TAG, "Started");
             while (!Thread.interrupted()) {
-
-
                 int readyChannels = selector.select();
                 if (readyChannels == 0) {
                     Thread.sleep(10);
