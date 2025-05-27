@@ -13,6 +13,8 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import kw.test.vpncapturedata.data.Packet;
 import kw.test.vpncapturedata.data.TCPHeader;
@@ -80,9 +82,7 @@ public class TCPOutput implements Runnable {
                     processFIN(tcb, tcpHeader, responseBuffer);
                 else if (tcpHeader.isACK())
                     processACK(tcb, tcpHeader, payloadBuffer, responseBuffer);
-                else {
-                    xx(currentPacket);
-                }
+
                 // XXX: cleanup later
                 if (responseBuffer.position() == 0)
                     ByteBufferPool.release(responseBuffer);
@@ -96,10 +96,6 @@ public class TCPOutput implements Runnable {
             TCB.closeAll();
         }
     }
-
-
-
-
 
     public void xx(Packet currentPacket){
         ByteBuffer buffer = currentPacket.backingBuffer;
@@ -171,15 +167,15 @@ public class TCPOutput implements Runnable {
             try {
 
 //                outputChannel.connect(new InetSocketAddress(destinationAddress, destinationPort));
-                // 判断是否是 HTTPS（一般是端口 443）
-                if (destinationPort == 443) {
-                    // 重定向到你本地的 HTTPS 中间人代理，比如监听在 127.0.0.1:8888
-                    Log.d(TAG, "Redirecting HTTPS connection to MITM proxy");
-                    outputChannel.connect(new InetSocketAddress("127.0.0.1", 8888));
-                } else {
+//                // 判断是否是 HTTPS（一般是端口 443）
+//                if (destinationPort == 443) {
+//                    // 重定向到你本地的 HTTPS 中间人代理，比如监听在 127.0.0.1:8888
+//                    Log.d(TAG, "Redirecting HTTPS connection to MITM proxy");
+//                    outputChannel.connect(new InetSocketAddress("127.0.0.1", 8888));
+//                } else {
                     // 普通连接
                     outputChannel.connect(new InetSocketAddress(destinationAddress, destinationPort));
-                }
+//                }
 
                 if (outputChannel.finishConnect()) {
                     tcb.status = TCB.TCBStatus.SYN_RECEIVED;
@@ -259,15 +255,70 @@ public class TCPOutput implements Runnable {
                 tcb.waitingForNetworkData = true;
             }
 
-            // Forward to remote server
+
+            ByteBuffer temp = payloadBuffer.duplicate();
+            // ✅ 拷贝 payload 数据
+            byte[] payload = new byte[temp.remaining()];
+            temp.get(payload);
+
+
+
+
+
+
+
+
+//             Forward to remote server
             try {
-                while (payloadBuffer.hasRemaining())
+                while (payloadBuffer.hasRemaining()) {
                     outputChannel.write(payloadBuffer);
+                }
             } catch (IOException e) {
                 Log.e(TAG, "Network write error: " + tcb.ipAndPort, e);
                 sendRST(tcb, payloadSize, responseBuffer);
                 return;
             }
+
+
+
+
+            // ✅ 保存到缓存中
+            tcb.requestBuffer.write(payload);
+
+            // ✅ 判断是否是完整 HTTP 请求（只在明文 80 端口尝试）
+            if (tcb.ipAndPort.contains(":80:")) {
+                String fullRequest = new String(tcb.requestBuffer.toByteArray(), StandardCharsets.UTF_8);
+
+                // 判断是否请求头收完（注意：简单判断）
+                int headerEndIndex = fullRequest.indexOf("\r\n\r\n");
+                if (headerEndIndex != -1) {
+                    // 检查是否还有请求体
+                    String header = fullRequest.substring(0, headerEndIndex);
+                    int contentLength = 0;
+                    Matcher m = Pattern.compile("Content-Length: (\\d+)", Pattern.CASE_INSENSITIVE).matcher(header);
+                    if (m.find()) {
+                        contentLength = Integer.parseInt(m.group(1));
+                    }
+
+                    int totalExpectedLength = headerEndIndex + 4 + contentLength;
+                    if (tcb.requestBuffer.size() >= totalExpectedLength) {
+                        Log.d("VPN", "完整 HTTP 请求:\n" + fullRequest.substring(0, totalExpectedLength));
+
+                        // ✅ 清空缓存准备下一次请求
+                        byte[] leftover = tcb.requestBuffer.toByteArray();
+                        if (leftover.length > totalExpectedLength) {
+                            // 如果还有下一条请求，保留它
+                            tcb.requestBuffer.reset();
+                            tcb.requestBuffer.write(leftover, totalExpectedLength, leftover.length - totalExpectedLength);
+                        } else {
+                            tcb.requestBuffer.reset();
+                        }
+                    }
+                }
+            }
+//
+//
+
 
             // TODO: We don't expect out-of-order packets, but verify
             tcb.myAcknowledgementNum = tcpHeader.sequenceNumber + payloadSize;

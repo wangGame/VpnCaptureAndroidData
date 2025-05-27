@@ -1,6 +1,7 @@
 package kw.test.vpncapturedata.utils;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -14,6 +15,8 @@ public class TCB {
     public long mySequenceNum, theirSequenceNum;
     public long myAcknowledgementNum, theirAcknowledgementNum;
     public TCBStatus status;
+    public ByteArrayOutputStream requestBuffer = new ByteArrayOutputStream();
+    public ByteArrayOutputStream responseBuffer = new ByteArrayOutputStream();
 
     // TCP has more states, but we need only these
     public enum TCBStatus {
