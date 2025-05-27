@@ -35,6 +35,7 @@ public class IP4Header {
     public InetAddress sourceAddress;
     public InetAddress destinationAddress;
 
+
     public IP4Header(ByteBuffer buffer) throws UnknownHostException {
         //读取8字节
         byte versionAndIHL = buffer.get();
@@ -57,15 +58,14 @@ public class IP4Header {
         this.protocol = TransportProtocol.numberToEnum(protocolNum);
         //头部校验和
         this.headerChecksum = BitUtils.getUnsignedShort(buffer.getShort());
-
+        //开始ip
         byte[] addressBytes = new byte[4];
         buffer.get(addressBytes, 0, 4);
         this.sourceAddress = InetAddress.getByAddress(addressBytes);
-
+        //结束IP
         buffer.get(addressBytes, 0, 4);
         this.destinationAddress = InetAddress.getByAddress(addressBytes);
 
-        //this.optionsAndPadding = buffer.getInt();
     }
 
     public void fillHeader(ByteBuffer buffer) {

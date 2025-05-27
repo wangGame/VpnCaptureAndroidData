@@ -10,10 +10,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import kw.test.vpncapturedata.constant.Constant;
 import kw.test.vpncapturedata.data.Packet;
 import kw.test.vpncapturedata.data.TCPHeader;
 import kw.test.vpncapturedata.serivice.LocalVPNService;
@@ -42,8 +42,6 @@ public class TCPOutput implements Runnable {
         try {
             Thread currentThread = Thread.currentThread();
             while (true) {
-
-
                 Packet currentPacket;
                 // TODO: Block when not connected
                 do {
@@ -59,11 +57,13 @@ public class TCPOutput implements Runnable {
                 ByteBuffer payloadBuffer = currentPacket.backingBuffer;
                 currentPacket.backingBuffer = null;
                 ByteBuffer responseBuffer = ByteBufferPool.acquire();
-
+                //目标的IP
                 InetAddress destinationAddress = currentPacket.ip4Header.destinationAddress;
 
                 TCPHeader tcpHeader = currentPacket.tcpHeader;
+                //目标端口
                 int destinationPort = tcpHeader.destinationPort;
+                //开始端口
                 int sourcePort = tcpHeader.sourcePort;
 
                 String ipAndPort = destinationAddress.getHostAddress() + ":" +
@@ -80,7 +80,9 @@ public class TCPOutput implements Runnable {
                     processFIN(tcb, tcpHeader, responseBuffer);
                 else if (tcpHeader.isACK())
                     processACK(tcb, tcpHeader, payloadBuffer, responseBuffer);
+                else {
 
+                }
                 // XXX: cleanup later
                 if (responseBuffer.position() == 0)
                     ByteBufferPool.release(responseBuffer);
@@ -94,6 +96,62 @@ public class TCPOutput implements Runnable {
             TCB.closeAll();
         }
     }
+
+
+
+
+
+    public void xx(Packet currentPacket){
+        ByteBuffer buffer = currentPacket.backingBuffer;
+        int payloadLength = buffer.limit() - buffer.position();
+        if (payloadLength > 0) {
+            int position = buffer.position();
+            byte[] payload = new byte[payloadLength];
+            buffer.get(payload);
+            //恢复   不然数据没了
+
+            // 处理 payload
+            String data = null;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+                data = new String(payload, StandardCharsets.UTF_8);
+                //对其数据的
+                data.replaceAll("[^\\x20-\\x7E\\r\\n]", "");
+            }
+            if (data!=null){
+                //判断是不是http
+                if (isHttp(currentPacket,payload)) {
+    //                    Log.i("VPN", "http请求 数据\n：" + data);
+                }else {
+                    Log.i("VPN", "https请求 数据现不显示：");
+                }
+            }
+            buffer.position(position);
+        }
+    }
+
+
+    private boolean isHttp(Packet currentPacket, byte[] payload){
+        boolean isHttp = false;
+        // 基于端口判断
+        if (currentPacket.tcpHeader.destinationPort == 80 || currentPacket.tcpHeader.sourcePort == 80) {
+            isHttp = true;
+        } else if (currentPacket.tcpHeader.destinationPort == 443 || currentPacket.tcpHeader.sourcePort == 443) {
+            isHttp = false;
+        } else {
+            // 进一步根据 payload 内容判断
+            if (payload.length > 5) {
+                String str = new String(payload);
+
+                if (str.startsWith("GET") || str.startsWith("POST") || str.startsWith("HTTP")) {
+                    isHttp = true;
+                } else if ((payload[0] & 0xFF) == 0x16 && (payload[1] & 0xFF) == 0x03) {
+                    isHttp = false;
+                }
+            }
+        }
+        return isHttp;
+    }
+
 
     private void initializeConnection(String ipAndPort, InetAddress destinationAddress, int destinationPort,
                                       Packet currentPacket, TCPHeader tcpHeader, ByteBuffer responseBuffer)

@@ -28,10 +28,6 @@ public class Packet {
         this.ip4Header = new IP4Header(buffer);
         if (ip4Header.protocol == TransportProtocol.TCP){
             this.tcpHeader = new TCPHeader(buffer);
-
-            parseData(buffer);
-
-
             this.isTCP = true;
         }else if (ip4Header.protocol == TransportProtocol.UDP){
             this.udpHeader = new UDPHeader(buffer);
