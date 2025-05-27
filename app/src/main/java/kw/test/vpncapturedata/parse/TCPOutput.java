@@ -81,7 +81,7 @@ public class TCPOutput implements Runnable {
                 else if (tcpHeader.isACK())
                     processACK(tcb, tcpHeader, payloadBuffer, responseBuffer);
                 else {
-
+                    xx(currentPacket);
                 }
                 // XXX: cleanup later
                 if (responseBuffer.position() == 0)
@@ -158,16 +158,29 @@ public class TCPOutput implements Runnable {
             throws IOException {
         currentPacket.swapSourceAndDestination();
         if (tcpHeader.isSYN()) {
+            //与目标服务器建立链接
             SocketChannel outputChannel = SocketChannel.open();
             outputChannel.configureBlocking(false);
             vpnService.protect(outputChannel.socket());
 
-            TCB tcb = new TCB(ipAndPort, random.nextInt(Short.MAX_VALUE + 1), tcpHeader.sequenceNumber, tcpHeader.sequenceNumber + 1,
+            TCB tcb = new TCB(ipAndPort, random.nextInt(Short.MAX_VALUE + 1),
+                    tcpHeader.sequenceNumber, tcpHeader.sequenceNumber + 1,
                     tcpHeader.acknowledgementNumber, outputChannel, currentPacket);
             TCB.putTCB(ipAndPort, tcb);
 
             try {
-                outputChannel.connect(new InetSocketAddress(destinationAddress, destinationPort));
+
+//                outputChannel.connect(new InetSocketAddress(destinationAddress, destinationPort));
+                // 判断是否是 HTTPS（一般是端口 443）
+                if (destinationPort == 443) {
+                    // 重定向到你本地的 HTTPS 中间人代理，比如监听在 127.0.0.1:8888
+                    Log.d(TAG, "Redirecting HTTPS connection to MITM proxy");
+                    outputChannel.connect(new InetSocketAddress("127.0.0.1", 8888));
+                } else {
+                    // 普通连接
+                    outputChannel.connect(new InetSocketAddress(destinationAddress, destinationPort));
+                }
+
                 if (outputChannel.finishConnect()) {
                     tcb.status = TCB.TCBStatus.SYN_RECEIVED;
                     // TODO: Set MSS for receiving larger packets from the device

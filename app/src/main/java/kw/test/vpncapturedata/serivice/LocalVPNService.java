@@ -2,6 +2,7 @@ package kw.test.vpncapturedata.serivice;
 
 import android.net.VpnService;
 import android.os.ParcelFileDescriptor;
+import android.util.Log;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -16,6 +17,8 @@ import kw.test.vpncapturedata.parse.TCPOutput;
 import kw.test.vpncapturedata.parse.UDPInput;
 import kw.test.vpncapturedata.parse.UDPOutput;
 import kw.test.vpncapturedata.parse.VPNRunnable;
+import kw.test.vpncapturedata.proxy.CertificateManager;
+import kw.test.vpncapturedata.proxy.MitmTlsServer;
 
 public class LocalVPNService extends VpnService {
     private ParcelFileDescriptor vpnInterface;
@@ -57,6 +60,22 @@ public class LocalVPNService extends VpnService {
         executorService.submit(new TCPOutput(deviceTCPQueue, networkToDeviceQueue, tcpSelector, this));
         executorService.submit(
                 new VPNRunnable(vpnInterface.getFileDescriptor(), deviceUDPQueue, deviceTCPQueue, networkToDeviceQueue));
+
+
+    }
+
+    private void startMitmProxy() {
+        new Thread(() -> {
+            try {
+                MitmTlsServer server = new MitmTlsServer(
+                        CertificateManager.getInstance().loadCACert(),
+                        CertificateManager.getInstance().loadCAPrivateKey()
+                );
+                server.start();
+            } catch (Exception e) {
+                Log.e("MITM", "启动失败", e);
+            }
+        }).start();
     }
 
     private void setupVPN() {

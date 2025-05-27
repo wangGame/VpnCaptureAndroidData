@@ -171,6 +171,7 @@ public class MitmTlsServer {
             return null;
         }
     }
+
     private void relay(SSLSocket clientSocket, String remoteHost, int remotePort) {
         Socket serverSocket = null;
         try {
@@ -236,104 +237,4 @@ public class MitmTlsServer {
             }
         }
     }
-//    public void startMitm(int port) throws Exception {
-//        // 1. 创建本地服务器端 Socket
-//        ServerSocket serverSocket = new ServerSocket(port);
-//        Log.i("MITM", "TLS Server started on port " + port);
-//
-//        while (true) {
-//            Socket clientSocket = serverSocket.accept();
-//            new Thread(() -> handleClient(clientSocket)).start();
-//        }
-//    }
-
-
-//    public void handleConnection(Socket clientSocket) throws Exception {
-//        // 1. 提取 SNI 主机名
-//        InputStream is = clientSocket.getInputStream();
-//        byte[] tlsClientHello = new byte[4096];
-//        int len = is.read(tlsClientHello);
-//        String sniHost = TlsSniExtractor.extractSNI(tlsClientHello);
-//
-//        // 2. 动态生成服务端证书（伪造）
-//        KeyPair serverKeyPair = generateRSAKeyPair();
-//        X509Certificate serverCert = CertificateGenerator.generateCert(sniHost, serverKeyPair.getPublic(), caCert, caPrivateKey);
-//
-//        // 3. 构建 TLS Server Socket
-//        SSLContext sslContext = createServerSSLContext(serverCert, serverKeyPair.getPrivate());
-//        SSLSocketFactory factory = sslContext.getSocketFactory();
-//        SSLSocket sslSocket = (SSLSocket) factory.createSocket(
-//                clientSocket,
-//                clientSocket.getInetAddress().getHostAddress(),
-//                clientSocket.getPort(),
-//                true);
-//        sslSocket.setUseClientMode(false);
-//        sslSocket.startHandshake();
-//
-//        // 4. 建立远程连接
-//        try (Socket remote = new Socket(sniHost, 443)) {
-//            Thread clientToRemote = new Thread(() -> forwardData(sslSocket, remote));
-//            Thread remoteToClient = new Thread(() -> forwardData(remote, sslSocket));
-//            clientToRemote.start();
-//            remoteToClient.start();
-//        }
-//    }
-
-//    private SSLContext createServerSSLContext(X509Certificate cert, PrivateKey key) throws Exception {
-//        KeyStore ks = KeyStore.getInstance("JKS");
-//        ks.load(null, null);
-//        ks.setKeyEntry("alias", key, "password".toCharArray(), new Certificate[]{cert, caCert});
-//        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-//        kmf.init(ks, "password".toCharArray());
-//        SSLContext context = SSLContext.getInstance("TLS");
-//        context.init(kmf.getKeyManagers(), null, null);
-//        return context;
-//    }
-//
-//    private KeyPair generateRSAKeyPair() throws Exception {
-//        KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
-//        gen.initialize(2048);
-//        return gen.generateKeyPair();
-//    }
-
-//    private void handleClient(Socket clientSocket) {
-//        try {
-//            // 获取客户端请求目标主机名，例如通过 SNI（稍后你可以从 TLS ClientHello 中提取）
-//            String hostname = "example.com";
-//
-//            // 2. 使用 BouncyCastle 动态签发伪造证书
-//            KeyPair serverKeyPair = CertUtil.generateRSAKeyPair();
-//            X509Certificate serverCert = CertUtil.generateFakeCert(caCert, caKey, serverKeyPair, hostname);
-//
-//            // 3. 构造 SSLContext 使用伪造证书
-//            SSLContext sslContext = CertUtil.createSSLContext(serverCert, serverKeyPair.getPrivate(), caCert);
-//
-//            SSLSocketFactory factory = sslContext.getSocketFactory();
-//            SSLSocket sslSocket = (SSLSocket) factory.createSocket(
-//                    clientSocket,
-//                    clientSocket.getInetAddress().getHostAddress(),
-//                    clientSocket.getPort(),
-//                    true
-//            );
-//            sslSocket.setUseClientMode(false);
-//            sslSocket.startHandshake();
-//
-//            BufferedReader in = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
-//            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(sslSocket.getOutputStream()));
-//
-//            // 4. 打印 HTTPS 请求明文数据
-//            String line;
-//            while ((line = in.readLine()) != null) {
-//                Log.i("MITM", "HTTPS: " + line);
-//                if (line.isEmpty()) break; // 结束头部
-//            }
-//
-//            // 5. 回复简单响应 (可选)
-//            out.write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n");
-//            out.flush();
-//
-//        } catch (Exception e) {
-//            Log.e("MITM", "错误: " + e.getMessage());
-//        }
-//    }
 }
